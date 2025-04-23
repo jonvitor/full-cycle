@@ -1,9 +1,9 @@
 package com.fullcycle.admin.catalogo.domain.category;
 
 import com.fullcycle.admin.catalogo.domain.AggregateRoot;
+import com.fullcycle.admin.catalogo.domain.validation.ValidationHandler;
 
 import java.time.Instant;
-import java.util.UUID;
 
 public class Category extends AggregateRoot<CategoryID> {
 
@@ -19,7 +19,7 @@ public class Category extends AggregateRoot<CategoryID> {
             final String aName,
             final String aDescription,
             final boolean isActive,
-            final Instant aCeatedAt,
+            final Instant aCreatedAt,
             final Instant aUpdatedAt,
             final Instant aDeletedAt
     ) {
@@ -27,7 +27,7 @@ public class Category extends AggregateRoot<CategoryID> {
         this.name = aName;
         this.description = aDescription;
         this.active = isActive;
-        this.createdAt = aCeatedAt;
+        this.createdAt = aCreatedAt;
         this.updatedAt = aUpdatedAt;
         this.deletedAt = aDeletedAt;
     }
@@ -35,11 +35,37 @@ public class Category extends AggregateRoot<CategoryID> {
     public static Category newCategory(final String aName, final String aDescription, final boolean isActive) {
         final var id = CategoryID.unique();
         final var now = Instant.now();
-        return new Category(id, aName, aDescription, isActive, now, now, null);
+        final var deletedAt = !isActive ? Instant.now() : null;
+        return new Category(id, aName, aDescription, isActive, now, now, deletedAt);
     }
 
+    @Override
     public CategoryID getId() {
         return id;
+    }
+
+    @Override
+    public void validate(final ValidationHandler handler) {
+        new CategoryValidator(this, handler).validate();
+    }
+
+    public Category deactivate() {
+        if (deletedAt == null) {
+            this.deletedAt = Instant.now();
+        }
+
+        this.active = false;
+        this.updatedAt = Instant.now();
+
+        return this;
+    }
+
+    public Category activate() {
+        this.deletedAt = null;
+        this.active = true;
+        this.updatedAt = Instant.now();
+
+        return this;
     }
 
     public String getName() {
